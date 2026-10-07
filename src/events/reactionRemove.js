@@ -7,32 +7,25 @@ module.exports = {
   async execute(reaction, user, client) {
     if (user.bot) return;
 
-    if (reaction.partial) {
-      try { await reaction.fetch(); } catch { return; }
-    }
-    if (reaction.message.partial) {
-      try { await reaction.message.fetch(); } catch { return; }
-    }
+    if (reaction.partial) { try { await reaction.fetch(); } catch { return; } }
+    if (reaction.message.partial) { try { await reaction.message.fetch(); } catch { return; } }
 
     if (!fs.existsSync(dataPath)) return;
     const data = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
 
-    const msgId = reaction.message.id;
-    const emoji = reaction.emoji.id ? reaction.emoji.id : reaction.emoji.name;
+    if (reaction.message.id !== data.messageId) return;
 
-    if (!data[msgId] || !data[msgId][emoji]) return;
+    const emojiKey = reaction.emoji.id ?? reaction.emoji.name;
+    const roleId = data.pairs?.[emojiKey];
+    if (!roleId) return;
 
     const guild = reaction.message.guild;
     const member = await guild.members.fetch(user.id).catch(() => null);
     if (!member) return;
 
-    const role = guild.roles.cache.get(data[msgId][emoji]);
+    const role = guild.roles.cache.get(roleId);
     if (!role) return;
 
-    try {
-      await member.roles.remove(role);
-    } catch (err) {
-      console.error('Could not remove role:', err);
-    }
+    await member.roles.remove(role).catch(err => console.error('[RR] Remove role failed:', err.message));
   },
 };

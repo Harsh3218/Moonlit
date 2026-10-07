@@ -19,7 +19,21 @@ module.exports = {
       return;
     }
 
-    // Assign the role
+    // Strip any roles Discord may have auto-assigned (e.g. via bots, autorole, etc.)
+    const rolesToRemove = member.roles.cache.filter(r =>
+      r.id !== member.guild.id && // exclude @everyone
+      r.id !== holdRole.id
+    );
+
+    const removedRoleNames = [];
+    for (const [, role] of rolesToRemove) {
+      try {
+        await member.roles.remove(role, 'On Hold: stripping roles from new account');
+        removedRoleNames.push(role.name);
+      } catch {}
+    }
+
+    // Assign On Hold
     try {
       await member.roles.add(holdRole, 'Account younger than 6 months');
     } catch (err) {
@@ -49,6 +63,10 @@ module.exports = {
         { name: '📅 Account Age', value: ageString, inline: true },
         { name: '🔒 Role Assigned', value: holdRole.toString(), inline: true },
         { name: '📌 Reason', value: 'Account created less than 6 months ago' },
+        {
+          name: '🗑️ Roles Stripped',
+          value: removedRoleNames.length > 0 ? removedRoleNames.map(n => `\`${n}\``).join(', ') : 'None',
+        },
       )
       .setFooter({ text: 'Review and remove the role manually if the user is legitimate' })
       .setTimestamp();

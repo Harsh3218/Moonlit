@@ -7,33 +7,26 @@ module.exports = {
   async execute(reaction, user, client) {
     if (user.bot) return;
 
-    // Fetch partial reaction/message if needed
-    if (reaction.partial) {
-      try { await reaction.fetch(); } catch { return; }
-    }
-    if (reaction.message.partial) {
-      try { await reaction.message.fetch(); } catch { return; }
-    }
+    if (reaction.partial) { try { await reaction.fetch(); } catch { return; } }
+    if (reaction.message.partial) { try { await reaction.message.fetch(); } catch { return; } }
 
     if (!fs.existsSync(dataPath)) return;
     const data = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
 
-    const msgId = reaction.message.id;
-    const emoji = reaction.emoji.id ? reaction.emoji.id : reaction.emoji.name;
+    // Only care about reactions on the single panel message
+    if (reaction.message.id !== data.messageId) return;
 
-    if (!data[msgId] || !data[msgId][emoji]) return;
+    const emojiKey = reaction.emoji.id ?? reaction.emoji.name;
+    const roleId = data.pairs?.[emojiKey];
+    if (!roleId) return;
 
     const guild = reaction.message.guild;
     const member = await guild.members.fetch(user.id).catch(() => null);
     if (!member) return;
 
-    const role = guild.roles.cache.get(data[msgId][emoji]);
+    const role = guild.roles.cache.get(roleId);
     if (!role) return;
 
-    try {
-      await member.roles.add(role);
-    } catch (err) {
-      console.error('Could not add role:', err);
-    }
+    await member.roles.add(role).catch(err => console.error('[RR] Add role failed:', err.message));
   },
 };
