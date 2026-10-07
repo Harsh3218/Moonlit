@@ -1,7 +1,7 @@
 const { Client, GatewayIntentBits, Partials, Collection, Events } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
-const config = require('../config.json');
+const config = require('./env');
 
 const client = new Client({
   intents: [
@@ -40,4 +40,4 @@ for (const file of eventFiles) {
   }
 }
 
-client.login(config.token);
+client.login(require('./env').token);
