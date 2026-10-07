@@ -1,4 +1,4 @@
-const config = require('../../config.json');
+const config = require('../env');
 
 module.exports = {
   name: 'messageCreate',
